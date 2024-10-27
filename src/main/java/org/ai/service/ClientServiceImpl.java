@@ -14,7 +14,6 @@ import java.util.List;
 public class ClientServiceImpl{
     private final ClientRepo clientRepo;
 
-
     @Transactional
     public Client createClient(Client client) {
         clientRepo.persist(client);
@@ -23,7 +22,17 @@ public class ClientServiceImpl{
     }
 
     @Transactional
-    public Client updateClient(Client client) {
+    public Client addAiInstructions(List<String> aiInstructions, Long clientId) {
+        Client client = clientRepo.findById(clientId);
+        client.getAiInstructions().addAll(aiInstructions);
+        clientRepo.persist(client);
+        return client;
+    }
+
+    @Transactional
+    public Client deleteAiInstructions(List<String> aiInstructions, Long clientId) {
+        Client client = clientRepo.findById(clientId);
+        client.getAiInstructions().removeAll(aiInstructions);
         clientRepo.persist(client);
         return client;
     }

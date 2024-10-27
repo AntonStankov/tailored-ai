@@ -23,14 +23,6 @@ public class ClientResource {
         return clientService.createClient(client);
     }
 
-    @Path("/update")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Client updateClient(Client client) {
-        return clientService.updateClient(client);
-    }
-
     @Path("/delete/{id}")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -51,5 +43,21 @@ public class ClientResource {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Client> getClients() {
         return clientService.getClients();
+    }
+
+    @Path("/add-ai-instructions/{clientId}")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Client addAiInstructions(List<String> aiInstructions, @PathParam("clientId") Long clientId) {
+        return clientService.addAiInstructions(aiInstructions, clientId);
+    }
+
+    @Path("/delete-ai-instructions/{clientId}")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Client deleteAiInstructions(List<String> aiInstructions, @PathParam("clientId") Long clientId) {
+        return clientService.deleteAiInstructions(aiInstructions, clientId);
     }
 }
