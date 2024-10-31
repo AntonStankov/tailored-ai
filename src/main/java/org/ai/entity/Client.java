@@ -1,6 +1,10 @@
 package org.ai.entity;
 
 
+import io.quarkus.security.jpa.Password;
+import io.quarkus.security.jpa.Roles;
+import io.quarkus.security.jpa.UserDefinition;
+import io.quarkus.security.jpa.Username;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -17,7 +21,16 @@ import java.util.List;
 @ApplicationScoped
 @Entity
 @Table(name = "clients")
+@UserDefinition
 public class Client {
+
+    @Username
+    private String username;
+    @Password
+    private String password;
+    @Roles
+    private String role;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,6 +44,8 @@ public class Client {
     private String companyActivity;
 
     private int aiHistory;
+
+    private int promptsSent;
 
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "ai-instructions", joinColumns = @JoinColumn(name = "client_id"))

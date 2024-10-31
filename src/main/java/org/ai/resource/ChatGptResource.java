@@ -7,6 +7,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
+import org.ai.auth.ClientRoleAllowed;
 import org.ai.config.ApplicationConfig;
 import org.ai.integration.types.Records;
 import org.ai.service.external.ChatGptServiceClient;
@@ -27,6 +28,7 @@ public class ChatGptResource {
     private OpenAiUtils openAiUtils;
 
     @POST
+    @ClientRoleAllowed
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     public String completion(String prompt) {

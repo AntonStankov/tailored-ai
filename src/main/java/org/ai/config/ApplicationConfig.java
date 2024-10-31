@@ -10,4 +10,7 @@ public interface ApplicationConfig {
 
     @WithName("openai.model")
     String openAiModel();
+
+    @WithName("admin.username")
+    String adminUsername();
 }
