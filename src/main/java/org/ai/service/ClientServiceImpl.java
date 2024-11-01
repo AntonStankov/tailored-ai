@@ -1,5 +1,6 @@
 package org.ai.service;
 
+import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -14,16 +15,29 @@ import java.util.List;
 public class ClientServiceImpl{
     private final ClientRepo clientRepo;
 
-
     @Transactional
     public Client createClient(Client client) {
+        client.setUsername(client.getName());
+        client.setPassword(BcryptUtil.bcryptHash(client.getName()));
+        client.setRole("client_" + client.getName());
+
         clientRepo.persist(client);
         clientRepo.flush();
         return client;
     }
 
     @Transactional
-    public Client updateClient(Client client) {
+    public Client addAiInstructions(List<String> aiInstructions, Long clientId) {
+        Client client = clientRepo.findById(clientId);
+        client.getAiInstructions().addAll(aiInstructions);
+        clientRepo.persist(client);
+        return client;
+    }
+
+    @Transactional
+    public Client deleteAiInstructions(List<String> aiInstructions, Long clientId) {
+        Client client = clientRepo.findById(clientId);
+        client.getAiInstructions().removeAll(aiInstructions);
         clientRepo.persist(client);
         return client;
     }
