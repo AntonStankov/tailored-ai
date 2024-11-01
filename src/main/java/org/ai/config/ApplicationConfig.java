@@ -5,10 +5,10 @@ import io.smallrye.config.WithName;
 
 @ConfigMapping(prefix = "app")
 public interface ApplicationConfig {
-    @WithName("openai.key")
+    @WithName("nvidia.key")
     String openAiApiKey();
 
-    @WithName("openai.model")
+    @WithName("nvidia.model")
     String openAiModel();
 
     @WithName("admin.username")

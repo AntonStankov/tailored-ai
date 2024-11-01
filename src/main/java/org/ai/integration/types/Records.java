@@ -7,8 +7,8 @@ import java.util.List;
 
 @ApplicationScoped
 public class Records {
-    public record ChatGptMessage(String role, String content) {
-        public ChatGptMessage {
+    public record NvidiaAIMessage(String role, String content) {
+        public NvidiaAIMessage {
             if (role == null || role.isBlank()) {
                 throw new IllegalArgumentException("Role must not be null or blank");
             }
@@ -18,15 +18,15 @@ public class Records {
         }
     }
 
-    public record ChatGptRequest(String model, List<ChatGptMessage> messages) {
+    public record NvidiaAIRequest(String model, List<NvidiaAIMessage> messages) {
 
-        public static ChatGptRequest newRequest(String model, String prompt) {
-            final List<ChatGptMessage> messages = new ArrayList<>();
-            messages.add(new ChatGptMessage("user", prompt));
-            return new ChatGptRequest(model, messages);
+        public static NvidiaAIRequest newRequest(String model, String prompt) {
+            final List<NvidiaAIMessage> messages = new ArrayList<>();
+            messages.add(new NvidiaAIMessage("user", prompt));
+            return new NvidiaAIRequest(model, messages);
         }
 
-        public ChatGptRequest {
+        public NvidiaAIRequest {
             if (model == null || model.isBlank()) {
                 throw new IllegalArgumentException("Model must not be null or blank");
             }
@@ -36,8 +36,8 @@ public class Records {
         }
     }
 
-    public record ChatGptChoice(int index, ChatGptMessage message) {
-        public ChatGptChoice {
+    public record NvidiaAIChoice(int index, NvidiaAIMessage message) {
+        public NvidiaAIChoice {
             if (index < 0) {
                 throw new IllegalArgumentException("Index must be greater than or equal to 0");
             }
@@ -47,8 +47,8 @@ public class Records {
         }
     }
 
-    public record ChatGptResponse(List<ChatGptChoice> choices) {
-        public ChatGptResponse {
+    public record NvidiaAIResponse(List<NvidiaAIChoice> choices) {
+        public NvidiaAIResponse {
             if (choices == null || choices.isEmpty()) {
                 throw new IllegalArgumentException("Choices must not be null or empty");
             }

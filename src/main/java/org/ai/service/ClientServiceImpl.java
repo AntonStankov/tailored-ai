@@ -19,7 +19,7 @@ public class ClientServiceImpl{
     public Client createClient(Client client) {
         client.setUsername(client.getName());
         client.setPassword(BcryptUtil.bcryptHash(client.getName()));
-        client.setRole("client1_" + client.getName());
+        client.setRole("client_" + client.getName());
 
         clientRepo.persist(client);
         clientRepo.flush();
