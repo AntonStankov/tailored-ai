@@ -13,4 +13,10 @@ public interface ApplicationConfig {
 
     @WithName("admin.username")
     String adminUsername();
+
+    @WithName("prompt.script")
+    String promptScript();
+
+    @WithName("prompt.question")
+    String promptQuestion();
 }
