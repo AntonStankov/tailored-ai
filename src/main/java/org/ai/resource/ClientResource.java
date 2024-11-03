@@ -1,6 +1,7 @@
 package org.ai.resource;
 
 import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -18,6 +19,8 @@ import java.util.List;
 public class ClientResource {
 
     private final ClientServiceImpl clientService;
+
+    private final SecurityIdentity securityIdentity;
 
     @Path("/add")
     @POST
@@ -69,5 +72,13 @@ public class ClientResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Client deleteAiInstructions(List<String> aiInstructions, @PathParam("clientId") Long clientId) {
         return clientService.deleteAiInstructions(aiInstructions, clientId);
+    }
+
+    @GET
+    @Path("/findMe")
+    @ClientRoleAllowed
+    @Produces(MediaType.APPLICATION_JSON)
+    public Client findMe(){
+        return clientService.findByUsername(securityIdentity.getPrincipal().getName());
     }
 }
