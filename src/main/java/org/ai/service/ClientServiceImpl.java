@@ -54,4 +54,16 @@ public class ClientServiceImpl{
     public List<Client> getClients() {
         return clientRepo.listAll();
     }
+
+    @Transactional
+    public void increasePromptSentByUsername(String username) {
+        Client client = clientRepo.find("username", username).firstResult();
+        client.setPromptsSent(client.getPromptsSent() + 1);
+        clientRepo.persist(client);
+    }
+
+
+    public Client findByUsername(String username) {
+        return clientRepo.find("username", username).firstResult();
+    }
 }

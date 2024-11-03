@@ -7,11 +7,11 @@ import org.ai.config.ApplicationConfig;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
-public class OpenAiUtils {
+public class HistoryUtils {
 
     private final ApplicationConfig applicationConfig;
 
-    public String getBearer() {
-        return "Bearer " + applicationConfig.openAiApiKey();
+    public String formatHistory(String prompt, String answer) {
+        return applicationConfig.historyStarter() + prompt + applicationConfig.historySeparator() + answer + applicationConfig.historyEnder();
     }
 }
