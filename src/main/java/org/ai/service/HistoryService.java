@@ -1,52 +1,33 @@
 package org.ai.service;
 
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.RequiredArgsConstructor;
 import org.ai.config.ApplicationConfig;
-import org.ai.integration.types.HistoryFormat;
-
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.List;
+import org.apache.camel.CamelContext;
+import org.apache.camel.ProducerTemplate;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
 public class HistoryService {
 
     private final ApplicationConfig applicationConfig;
-
+    
+    @Inject
+    CamelContext camelContext;
 
     public void writeToFileInContainer(String host, int port, String user, String password, String filePath, String content) {
         try {
-            JSch jsch = new JSch();
-            Session session = jsch.getSession(user, host, port);
-            session.setPassword(password);
-            session.setConfig("StrictHostKeyChecking", "no");
-            session.connect();
+            String sshUri = String.format("ssh://%s@%s:%d/%s?password=%s", user, host, port, filePath, password);
 
             String command = "echo \"" + content + "\" >> " + filePath;
 
-            ChannelExec channel = (ChannelExec) session.openChannel("exec");
-            channel.setCommand(command);
-
-            channel.connect();
-            channel.disconnect();
-            session.disconnect();
+            ProducerTemplate template = camelContext.createProducerTemplate();
+            template.sendBody(sshUri, command);
 
             System.out.println("File written successfully in the container.");
         } catch (Exception e) {
-            e.printStackTrace();
             System.out.println("Failed to write to file in container.");
         }
     }
-
-//    public List<HistoryFormat> getHistory() {
-//
-//    }
 }

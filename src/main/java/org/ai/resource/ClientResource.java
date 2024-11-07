@@ -74,6 +74,18 @@ public class ClientResource {
         return clientService.deleteAiInstructions(aiInstructions, clientId);
     }
 
+    @Path("/get-instructions")
+    @POST
+    @ClientRoleAllowed
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getInstructions() {
+        String username = securityIdentity.getPrincipal().getName();
+        return clientService.getClients()
+                .stream()
+                .filter(client -> client.getUsername().equals(username))
+                .findFirst().get().getAiInstructions();
+    }
+
     @GET
     @Path("/findMe")
     @ClientRoleAllowed
