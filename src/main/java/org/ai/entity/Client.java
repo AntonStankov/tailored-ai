@@ -43,6 +43,8 @@ public class Client {
 
     private String companyActivity;
 
+    private String aiTitleMessage;
+
     private int aiHistory;
 
     private int promptsSent;
