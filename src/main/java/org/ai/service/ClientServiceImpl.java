@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.ai.entity.Client;
 import org.ai.service.repository.ClientRepo;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 
 @ApplicationScoped
@@ -18,7 +20,8 @@ public class ClientServiceImpl{
     @Transactional
     public Client createClient(Client client) {
         client.setUsername(client.getName());
-        client.setPassword(BcryptUtil.bcryptHash(client.getName()));
+        System.out.println(Base64.getEncoder().encodeToString(client.getName().getBytes(StandardCharsets.UTF_8)));
+        client.setPassword(BcryptUtil.bcryptHash(Base64.getEncoder().encodeToString(client.getName().getBytes(StandardCharsets.UTF_8))));
         client.setRole("client_" + client.getName());
 
         clientRepo.persist(client);
@@ -27,16 +30,16 @@ public class ClientServiceImpl{
     }
 
     @Transactional
-    public Client addAiInstructions(List<String> aiInstructions, Long clientId) {
-        Client client = clientRepo.findById(clientId);
+    public Client addAiInstructions(List<String> aiInstructions, String username) {
+        Client client = clientRepo.find("username", username).firstResult();
         client.getAiInstructions().addAll(aiInstructions);
         clientRepo.persist(client);
         return client;
     }
 
     @Transactional
-    public Client deleteAiInstructions(List<String> aiInstructions, Long clientId) {
-        Client client = clientRepo.findById(clientId);
+    public Client deleteAiInstructions(List<String> aiInstructions, String username) {
+        Client client = clientRepo.find("username", username).firstResult();
         client.getAiInstructions().removeAll(aiInstructions);
         clientRepo.persist(client);
         return client;

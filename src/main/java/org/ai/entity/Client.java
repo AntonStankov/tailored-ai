@@ -35,6 +35,7 @@ public class Client {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
     private String name;
 
     private String companyEmail;
@@ -51,6 +52,6 @@ public class Client {
 
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "ai-instructions", joinColumns = @JoinColumn(name = "client_id"))
-    @Column(nullable = false)
+    @Column(nullable = false, length = 1000)
     private List<String> aiInstructions;
 }

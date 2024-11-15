@@ -56,22 +56,24 @@ public class ClientResource {
         return clientService.getClients();
     }
 
-    @Path("/add-ai-instructions/{clientId}")
+    @Path("/add-ai-instructions")
     @POST
-    @RolesAllowed("admin")
+    @ClientRoleAllowed
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Client addAiInstructions(List<String> aiInstructions, @PathParam("clientId") Long clientId) {
-        return clientService.addAiInstructions(aiInstructions, clientId);
+    public Client addAiInstructions(List<String> aiInstructions) {
+        String username = securityIdentity.getPrincipal().getName();
+        return clientService.addAiInstructions(aiInstructions, username);
     }
 
-    @Path("/delete-ai-instructions/{clientId}")
+    @Path("/delete-ai-instructions")
     @POST
-    @RolesAllowed("admin")
+    @ClientRoleAllowed
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Client deleteAiInstructions(List<String> aiInstructions, @PathParam("clientId") Long clientId) {
-        return clientService.deleteAiInstructions(aiInstructions, clientId);
+    public Client deleteAiInstructions(List<String> aiInstructions) {
+        String username = securityIdentity.getPrincipal().getName();
+        return clientService.deleteAiInstructions(aiInstructions, username);
     }
 
     @Path("/get-instructions")
