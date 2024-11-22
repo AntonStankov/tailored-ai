@@ -46,3 +46,9 @@ nb-configuration.xml
 
 
 src/main/resources/application.properties
+
+env/setup/.terraform
+env/setup/.terraform.lock.hcl
+env/setup/terraform.tfstate
+env/setup/terraform.tfvars
+env/setup/ansible/inventory
