@@ -10,7 +10,11 @@ import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import org.ai.auth.ClientRoleAllowed;
 import org.ai.entity.Client;
+import org.ai.entity.HistoryEntry;
+import org.ai.integration.types.HistoryFormat;
 import org.ai.service.ClientServiceImpl;
+import org.ai.service.HistoryService;
+import org.eclipse.microprofile.faulttolerance.Bulkhead;
 
 import java.util.List;
 
@@ -22,11 +26,14 @@ public class ClientResource {
 
     private final SecurityIdentity securityIdentity;
 
+    private final HistoryService historyService;
+
     @Path("/add")
     @POST
     @RolesAllowed("admin")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @Bulkhead(value = 5, waitingTaskQueue = 10)
     public Client addClient(Client client) {
         return clientService.createClient(client);
     }
@@ -35,6 +42,7 @@ public class ClientResource {
     @POST
     @RolesAllowed("admin")
     @Consumes(MediaType.APPLICATION_JSON)
+    @Bulkhead(value = 5, waitingTaskQueue = 10)
     public void deleteClient(@PathParam("id") Long id) {
         clientService.deleteClient(id);
     }
@@ -44,6 +52,7 @@ public class ClientResource {
     @RolesAllowed("admin")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @Bulkhead(value = 5, waitingTaskQueue = 10)
     public Client getClient(@PathParam("id") Long id) {
         return clientService.getClient(id);
     }
@@ -52,6 +61,7 @@ public class ClientResource {
     @POST
     @RolesAllowed("admin")
     @Produces(MediaType.APPLICATION_JSON)
+    @Bulkhead(value = 5, waitingTaskQueue = 10)
     public List<Client> getClients() {
         return clientService.getClients();
     }
@@ -61,9 +71,10 @@ public class ClientResource {
     @ClientRoleAllowed
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Client addAiInstructions(List<String> aiInstructions) {
+    @Bulkhead(value = 5, waitingTaskQueue = 10)
+    public List<String> addAiInstructions(List<String> aiInstructions) {
         String username = securityIdentity.getPrincipal().getName();
-        return clientService.addAiInstructions(aiInstructions, username);
+        return clientService.addAiInstructions(aiInstructions, username).getAiInstructions();
     }
 
     @Path("/delete-ai-instructions")
@@ -71,15 +82,17 @@ public class ClientResource {
     @ClientRoleAllowed
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Client deleteAiInstructions(List<String> aiInstructions) {
+    @Bulkhead(value = 5, waitingTaskQueue = 10)
+    public List<String> deleteAiInstructions(List<String> aiInstructions) {
         String username = securityIdentity.getPrincipal().getName();
-        return clientService.deleteAiInstructions(aiInstructions, username);
+        return clientService.deleteAiInstructions(aiInstructions, username).getAiInstructions();
     }
 
     @Path("/get-instructions")
     @POST
     @ClientRoleAllowed
     @Produces(MediaType.APPLICATION_JSON)
+    @Bulkhead(value = 5, waitingTaskQueue = 10)
     public List<String> getInstructions() {
         String username = securityIdentity.getPrincipal().getName();
         return clientService.getClients()
@@ -92,7 +105,18 @@ public class ClientResource {
     @Path("/findMe")
     @ClientRoleAllowed
     @Produces(MediaType.APPLICATION_JSON)
+    @Bulkhead(value = 5, waitingTaskQueue = 10)
     public Client findMe(){
         return clientService.findByUsername(securityIdentity.getPrincipal().getName());
+    }
+
+    @GET
+    @Path("/history")
+    @ClientRoleAllowed
+    @Produces(MediaType.APPLICATION_JSON)
+    @Bulkhead(value = 10, waitingTaskQueue = 20)
+    public List<HistoryEntry> getHistory() {
+        String username = securityIdentity.getPrincipal().getName();
+        return historyService.getHistoryByClient(clientService.findByUsername(username));
     }
 }

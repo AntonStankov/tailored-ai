@@ -55,4 +55,7 @@ public interface ApplicationConfig {
 
     @WithName("assistant.cut.end")
     String assistantCutEnd();
+
+    @WithName("request.filter")
+    Integer requestFilter();
 }

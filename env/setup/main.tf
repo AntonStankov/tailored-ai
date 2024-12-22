@@ -8,6 +8,7 @@ terraform {
 }
 variable "do_token" {}
 variable "ssh_key" {}
+variable "ssh_interconnection" {}
 
 
 
@@ -38,6 +39,11 @@ variable "size" {
 resource "digitalocean_ssh_key" "ssh_key" {
   name       = "terraform"
   public_key = var.ssh_key
+}
+
+resource "digitalocean_ssh_key" "ssh_inter" {
+  name       = "terraform"
+  public_key = var.ssh_interconnection
 }
 
 resource "digitalocean_firewall" "firewall" {
@@ -127,7 +133,7 @@ resource "digitalocean_droplet" "tst-machine" {
   size   = var.size
   image  = "ubuntu-20-04-x64"
 
-  ssh_keys    = [digitalocean_ssh_key.ssh_key.fingerprint]
+  ssh_keys    = [digitalocean_ssh_key.ssh_key.fingerprint, digitalocean_ssh_key.ssh_inter.fingerprint]
   monitoring  = true
   ipv6        = true
 }

@@ -1,6 +1,7 @@
 package org.ai.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.security.jpa.Password;
 import io.quarkus.security.jpa.Roles;
 import io.quarkus.security.jpa.UserDefinition;
@@ -20,7 +21,7 @@ import java.util.List;
 @Setter
 @ApplicationScoped
 @Entity
-@Table(name = "clients")
+@Table(name = "clients", uniqueConstraints = @UniqueConstraint(columnNames = "name"))
 @UserDefinition
 public class Client {
 
@@ -53,5 +54,12 @@ public class Client {
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "ai-instructions", joinColumns = @JoinColumn(name = "client_id"))
     @Column(nullable = false, length = 1000)
+    @JsonIgnore
     private List<String> aiInstructions;
+
+    @OneToMany(mappedBy = "client",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonIgnore
+    private List<HistoryEntry> historyEntries;
 }

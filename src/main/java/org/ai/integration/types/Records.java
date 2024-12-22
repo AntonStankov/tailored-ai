@@ -20,8 +20,7 @@ public class Records {
 
     public record NvidiaAIRequest(String model, List<NvidiaAIMessage> messages) {
 
-        public static NvidiaAIRequest newRequest(String model, String prompt) {
-            final List<NvidiaAIMessage> messages = new ArrayList<>();
+        public static NvidiaAIRequest newRequest(String model, String prompt, List<NvidiaAIMessage> messages) {
             messages.add(new NvidiaAIMessage("user", prompt));
             return new NvidiaAIRequest(model, messages);
         }

@@ -21,6 +21,10 @@ RUN chown 1001 /work \
     && chown 1001:root /work
 COPY --chown=1001:root target/*-runner /work/application
 
+RUN microdnf install -y iputils curl bind-utils && microdnf clean all
+
+#COPY resolv.conf /etc/resolv.conf
+
 EXPOSE 8080
 USER 1001
 

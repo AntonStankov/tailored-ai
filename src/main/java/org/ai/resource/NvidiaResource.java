@@ -7,6 +7,8 @@ import jakarta.ws.rs.core.MediaType;
 import lombok.SneakyThrows;
 import org.ai.auth.ClientRoleAllowed;
 import org.ai.config.ApplicationConfig;
+import org.ai.entity.HistoryEntry;
+import org.ai.integration.types.CompletionRequest;
 import org.ai.integration.types.HistoryFormat;
 import org.ai.integration.types.Records;
 import org.ai.service.ClientServiceImpl;
@@ -15,6 +17,7 @@ import org.ai.service.external.HistoryNginxClient;
 import org.ai.service.external.NvidiaServiceClient;
 import org.ai.utils.HistoryUtils;
 import org.ai.utils.NvidiaUtils;
+import org.eclipse.microprofile.faulttolerance.Bulkhead;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.util.ArrayList;
@@ -53,10 +56,11 @@ public class NvidiaResource {
     @POST
     @SneakyThrows
     @ClientRoleAllowed
-    @Consumes(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.TEXT_PLAIN)
+//    @Bulkhead(value = 20, waitingTaskQueue = 30)
     @Path("/completion")
-    public String completion(String prompt) {
+    public String completion(CompletionRequest completionRequest) {
         String username = securityIdentity.getPrincipal().getName();
         String instructions = String.join(", ", clientService.getClients()
                 .stream()
@@ -66,15 +70,11 @@ public class NvidiaResource {
         String aiAnswer = nvidiaServiceClient.completion(nvidiaUtils.getBearer(),
                         Records.NvidiaAIRequest.newRequest(
                                 applicationConfig.openAiModel(),
-                                applicationConfig.promptScript() + instructions + applicationConfig.promptQuestion() + prompt + applicationConfig.promptFinal()))
+                                applicationConfig.promptScript() + instructions + applicationConfig.promptQuestion() + completionRequest.getPrompt() + applicationConfig.promptFinal(),
+                                completionRequest.getMessages()))
                 .choices().toString();
 
-        historyService.writeToFileInContainer(applicationConfig.nginxAddress(),
-                applicationConfig.nginxPort(),
-                applicationConfig.nginxUsername(),
-                applicationConfig.nginxPassword(),
-                applicationConfig.nginxDir() + username + applicationConfig.historyFileSuffix(),
-                historyUtils.formatHistory(prompt, aiAnswer));
+        historyService.saveHistory(new HistoryEntry(null, completionRequest.getPrompt(), aiAnswer, clientService.findByUsername(username)));
 
         clientService.increasePromptSentByUsername(username);
 
@@ -85,6 +85,7 @@ public class NvidiaResource {
     @SneakyThrows
     @ClientRoleAllowed
     @Produces(MediaType.APPLICATION_JSON)
+    @Bulkhead(value = 10, waitingTaskQueue = 20)
     @Path("/getHistory")
     public List<HistoryFormat> getHistory() {
         String username = securityIdentity.getPrincipal().getName();

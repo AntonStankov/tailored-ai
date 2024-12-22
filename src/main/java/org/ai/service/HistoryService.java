@@ -2,32 +2,45 @@ package org.ai.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.Table;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.ai.config.ApplicationConfig;
+import org.ai.entity.Client;
+import org.ai.entity.HistoryEntry;
+import org.ai.service.repository.HistoryRepo;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
+
+import java.util.List;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
 public class HistoryService {
 
     private final ApplicationConfig applicationConfig;
-    
-    @Inject
-    CamelContext camelContext;
 
-    public void writeToFileInContainer(String host, int port, String user, String password, String filePath, String content) {
-        try {
-            String sshUri = String.format("ssh://%s@%s:%d/%s?password=%s", user, host, port, filePath, password);
+    private final HistoryRepo historyRepo;
 
-            String command = "echo \"" + content + "\" >> " + filePath;
 
-            ProducerTemplate template = camelContext.createProducerTemplate();
-            template.sendBody(sshUri, command);
+    @Transactional
+    public void saveHistory(HistoryEntry historyEntry) {
+        historyRepo.persist(historyEntry);
+        historyRepo.flush();
+    }
+    public void deleteHistory(Long id) {
+        historyRepo.deleteById(id);
+    }
 
-            System.out.println("File written successfully in the container.");
-        } catch (Exception e) {
-            System.out.println("Failed to write to file in container.");
-        }
+    public void deleteHistoryByClientId(Long clientId) {
+        historyRepo.delete("client.id", clientId);
+    }
+
+    public void deleteAllHistory() {
+        historyRepo.deleteAll();
+    }
+
+    public List<HistoryEntry> getHistoryByClient(Client client) {
+        return historyRepo.findByClient(client);
     }
 }
