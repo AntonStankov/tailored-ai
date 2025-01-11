@@ -12,6 +12,7 @@ import org.ai.auth.ClientRoleAllowed;
 import org.ai.entity.Client;
 import org.ai.entity.HistoryEntry;
 import org.ai.entity.PrivateClient;
+import org.ai.integration.types.GenericAuthRequest;
 import org.ai.integration.types.HistoryFormat;
 import org.ai.integration.types.SaveClientRequest;
 import org.ai.service.ClientServiceImpl;
@@ -77,9 +78,12 @@ public class ClientResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Bulkhead(value = 5, waitingTaskQueue = 10)
-    public List<String> addAiInstructions(List<String> aiInstructions) {
+    public List<String> addAiInstructions(GenericAuthRequest<List<String>> request) {
         String username = securityIdentity.getPrincipal().getName();
-        return clientService.addAiInstructions(aiInstructions, username).getAiInstructions();
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+            throw new ForbiddenException();
+        }
+        return clientService.addAiInstructions(request.getData(), username).getAiInstructions();
     }
 
     @Path("/delete-ai-instructions")
@@ -88,9 +92,12 @@ public class ClientResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Bulkhead(value = 5, waitingTaskQueue = 10)
-    public List<String> deleteAiInstructions(List<String> aiInstructions) {
+    public List<String> deleteAiInstructions(GenericAuthRequest<List<String>> request) {
         String username = securityIdentity.getPrincipal().getName();
-        return clientService.deleteAiInstructions(aiInstructions, username).getAiInstructions();
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+            throw new ForbiddenException();
+        }
+        return clientService.deleteAiInstructions(request.getData(), username).getAiInstructions();
     }
 
     @Path("/get-instructions")
@@ -98,8 +105,11 @@ public class ClientResource {
     @ClientRoleAllowed
     @Produces(MediaType.APPLICATION_JSON)
     @Bulkhead(value = 5, waitingTaskQueue = 10)
-    public List<String> getInstructions() {
+    public List<String> getInstructions(GenericAuthRequest<String> request) {
         String username = securityIdentity.getPrincipal().getName();
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+            throw new ForbiddenException();
+        }
         return clientService.getClients()
                 .stream()
                 .filter(client -> client.getUsername().equals(username))
@@ -111,7 +121,10 @@ public class ClientResource {
     @ClientRoleAllowed
     @Produces(MediaType.APPLICATION_JSON)
     @Bulkhead(value = 5, waitingTaskQueue = 10)
-    public Client findMe(){
+    public Client findMe(GenericAuthRequest<String> request) {
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+            throw new ForbiddenException();
+        }
         return clientService.findByUsername(securityIdentity.getPrincipal().getName());
     }
 
@@ -120,8 +133,11 @@ public class ClientResource {
     @ClientRoleAllowed
     @Produces(MediaType.APPLICATION_JSON)
     @Bulkhead(value = 10, waitingTaskQueue = 20)
-    public List<HistoryEntry> getHistory() {
+    public List<HistoryEntry> getHistory(GenericAuthRequest<String> request) {
         String username = securityIdentity.getPrincipal().getName();
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+            throw new ForbiddenException();
+        }
         return historyService.getHistoryByClient(clientService.findByUsername(username));
     }
 }

@@ -9,10 +9,12 @@ import org.ai.auth.ClientRoleAllowed;
 import org.ai.config.ApplicationConfig;
 import org.ai.entity.HistoryEntry;
 import org.ai.integration.types.CompletionRequest;
+import org.ai.integration.types.GenericAuthRequest;
 import org.ai.integration.types.HistoryFormat;
 import org.ai.integration.types.Records;
 import org.ai.service.ClientServiceImpl;
 import org.ai.service.HistoryService;
+import org.ai.service.PrivateClientService;
 import org.ai.service.external.HistoryNginxClient;
 import org.ai.service.external.NvidiaServiceClient;
 import org.ai.utils.HistoryUtils;
@@ -53,6 +55,9 @@ public class NvidiaResource {
     @RestClient
     private HistoryNginxClient historyNginxClient;
 
+    @Inject
+    private PrivateClientService privateClientService;
+
     @POST
     @SneakyThrows
     @ClientRoleAllowed
@@ -87,7 +92,10 @@ public class NvidiaResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Bulkhead(value = 10, waitingTaskQueue = 20)
     @Path("/getHistory")
-    public List<HistoryFormat> getHistory() {
+    public List<HistoryFormat> getHistory(GenericAuthRequest<String> request) {
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+            throw new ForbiddenException();
+        }
         String username = securityIdentity.getPrincipal().getName();
         String historyString = historyNginxClient.getFileContent(username + applicationConfig.historyFileSuffix());
         List<HistoryFormat> history = new ArrayList<>();
