@@ -11,9 +11,12 @@ import lombok.RequiredArgsConstructor;
 import org.ai.auth.ClientRoleAllowed;
 import org.ai.entity.Client;
 import org.ai.entity.HistoryEntry;
+import org.ai.entity.PrivateClient;
 import org.ai.integration.types.HistoryFormat;
+import org.ai.integration.types.SaveClientRequest;
 import org.ai.service.ClientServiceImpl;
 import org.ai.service.HistoryService;
+import org.ai.service.PrivateClientService;
 import org.eclipse.microprofile.faulttolerance.Bulkhead;
 
 import java.util.List;
@@ -28,14 +31,16 @@ public class ClientResource {
 
     private final HistoryService historyService;
 
+    private final PrivateClientService privateClientService;
+
     @Path("/add")
     @POST
     @RolesAllowed("admin")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Bulkhead(value = 5, waitingTaskQueue = 10)
-    public Client addClient(Client client) {
-        return clientService.createClient(client);
+    public PrivateClient addClient(SaveClientRequest request) {
+        return privateClientService.savePrivateClient(request.getClient(), request.getClient().getName(), request.getPassword());
     }
 
     @Path("/delete/{id}")
