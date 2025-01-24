@@ -93,10 +93,11 @@ public class NvidiaResource {
     @Bulkhead(value = 10, waitingTaskQueue = 20)
     @Path("/getHistory")
     public List<HistoryFormat> getHistory(GenericAuthRequest<String> request) {
-        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+        String username = securityIdentity.getPrincipal().getName();
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword(), username)) {
             throw new ForbiddenException();
         }
-        String username = securityIdentity.getPrincipal().getName();
+
         String historyString = historyNginxClient.getFileContent(username + applicationConfig.historyFileSuffix());
         List<HistoryFormat> history = new ArrayList<>();
 

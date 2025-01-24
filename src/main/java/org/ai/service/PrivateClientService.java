@@ -32,7 +32,10 @@ public class PrivateClientService {
         return privateClientRepo.find("client", client).firstResult();
     }
 
-    public boolean checkPrivateClientAuthority(String username, String password) {
+    public boolean checkPrivateClientAuthority(String username, String password, String publicUsername) {
+        if (!username.equals(publicUsername)) {
+            return false;
+        }
         Client client = clientService.findByUsername(username);
         PrivateClient privateClient = getPrivateClientByClient(client);
         return username.equals(privateClient.getPrivateUsername()) && BcryptUtil.matches(password, privateClient.getPrivatePassword());

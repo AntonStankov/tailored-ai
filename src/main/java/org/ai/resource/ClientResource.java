@@ -80,7 +80,7 @@ public class ClientResource {
     @Bulkhead(value = 5, waitingTaskQueue = 10)
     public List<String> addAiInstructions(GenericAuthRequest<List<String>> request) {
         String username = securityIdentity.getPrincipal().getName();
-        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword(), username)) {
             throw new ForbiddenException();
         }
         return clientService.addAiInstructions(request.getData(), username).getAiInstructions();
@@ -94,7 +94,7 @@ public class ClientResource {
     @Bulkhead(value = 5, waitingTaskQueue = 10)
     public List<String> deleteAiInstructions(GenericAuthRequest<List<String>> request) {
         String username = securityIdentity.getPrincipal().getName();
-        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword(), username)) {
             throw new ForbiddenException();
         }
         return clientService.deleteAiInstructions(request.getData(), username).getAiInstructions();
@@ -107,7 +107,7 @@ public class ClientResource {
     @Bulkhead(value = 5, waitingTaskQueue = 10)
     public List<String> getInstructions(GenericAuthRequest<String> request) {
         String username = securityIdentity.getPrincipal().getName();
-        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword(), username)) {
             throw new ForbiddenException();
         }
         return clientService.getClients()
@@ -122,7 +122,9 @@ public class ClientResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Bulkhead(value = 5, waitingTaskQueue = 10)
     public Client findMe(GenericAuthRequest<String> request) {
-        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(),
+                request.getPassword(),
+                securityIdentity.getPrincipal().getName())) {
             throw new ForbiddenException();
         }
         return clientService.findByUsername(securityIdentity.getPrincipal().getName());
@@ -135,7 +137,7 @@ public class ClientResource {
     @Bulkhead(value = 10, waitingTaskQueue = 20)
     public List<HistoryEntry> getHistory(GenericAuthRequest<String> request) {
         String username = securityIdentity.getPrincipal().getName();
-        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword())) {
+        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword(), username)) {
             throw new ForbiddenException();
         }
         return historyService.getHistoryByClient(clientService.findByUsername(username));
