@@ -18,4 +18,5 @@ import java.util.List;
 public class CompletionRequest {
     private String prompt;
     private List<Records.NvidiaAIMessage> messages;
+    private String threadId;
 }

@@ -22,6 +22,7 @@ public class PrivateClient {
 
     private String privateUsername;
     private String privatePassword;
+    private String assistantId;
 
     @OneToOne
     private Client client;

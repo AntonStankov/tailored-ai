@@ -18,9 +18,14 @@ import org.ai.integration.types.SaveClientRequest;
 import org.ai.service.ClientServiceImpl;
 import org.ai.service.HistoryService;
 import org.ai.service.PrivateClientService;
+import org.ai.service.external.OpenAIAssistantClient;
 import org.eclipse.microprofile.faulttolerance.Bulkhead;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Path("/clients")
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -34,6 +39,10 @@ public class ClientResource {
 
     private final PrivateClientService privateClientService;
 
+    @Inject
+    @RestClient
+    private OpenAIAssistantClient openAIAssistantClient;
+
     @Path("/add")
     @POST
     @RolesAllowed("admin")
@@ -41,7 +50,15 @@ public class ClientResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Bulkhead(value = 5, waitingTaskQueue = 10)
     public PrivateClient addClient(SaveClientRequest request) {
-        return privateClientService.savePrivateClient(request.getClient(), request.getClient().getName(), request.getPassword());
+
+        Map<String, Object> assistantRequest = new HashMap<>();
+        assistantRequest.put("name", request.getClient().getName());
+        assistantRequest.put("instructions", request.getClient().getAiInstructions().stream().map(String::valueOf).collect(Collectors.toList()));
+        assistantRequest.put("model", "gpt-4-turbo");
+
+        Map<String, Object> assistantResponse = openAIAssistantClient.createAssistant(assistantRequest);
+
+        return privateClientService.savePrivateClient(request.getClient(), request.getClient().getName(), request.getPassword(), (String) assistantResponse.get("id"));
     }
 
     @Path("/delete/{id}")

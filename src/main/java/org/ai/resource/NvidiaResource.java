@@ -16,22 +16,20 @@ import org.ai.service.ClientServiceImpl;
 import org.ai.service.HistoryService;
 import org.ai.service.PrivateClientService;
 import org.ai.service.external.HistoryNginxClient;
-import org.ai.service.external.NvidiaServiceClient;
+import org.ai.service.external.OpenAIAssistantClient;
 import org.ai.utils.HistoryUtils;
 import org.ai.utils.NvidiaUtils;
 import org.eclipse.microprofile.faulttolerance.Bulkhead;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Path("/chat")
 public class NvidiaResource {
 
     @Inject
     @RestClient
-    private NvidiaServiceClient nvidiaServiceClient;
+    private OpenAIAssistantClient openAIAssistantClient;
 
     @Inject
     private ApplicationConfig applicationConfig;
@@ -58,33 +56,58 @@ public class NvidiaResource {
     @Inject
     private PrivateClientService privateClientService;
 
+    @GET
+    @SneakyThrows
+    @ClientRoleAllowed
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Bulkhead(value = 20, waitingTaskQueue = 30)
+    @Path("/start")
+    public Map<String, Object> startAssistantConversation() {
+        Map<String, Object> threadResponse = openAIAssistantClient.createThread();
+        String threadId = (String) threadResponse.get("id");
+
+        return Map.of("thread_id", threadId);
+    }
+
     @POST
     @SneakyThrows
     @ClientRoleAllowed
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.TEXT_PLAIN)
-//    @Bulkhead(value = 20, waitingTaskQueue = 30)
-    @Path("/completion")
-    public String completion(CompletionRequest completionRequest) {
+    @Bulkhead(value = 20, waitingTaskQueue = 30)
+    @Path("/chat")
+    public Map<String, Object> useAssistantConversation(CompletionRequest completionRequest) {
         String username = securityIdentity.getPrincipal().getName();
-        String instructions = String.join(", ", clientService.getClients()
-                .stream()
-                .filter(client -> client.getUsername().equals(username))
-                .findFirst().get().getAiInstructions());
 
-        String aiAnswer = nvidiaServiceClient.completion(nvidiaUtils.getBearer(),
-                        Records.NvidiaAIRequest.newRequest(
-                                applicationConfig.openAiModel(),
-                                applicationConfig.promptScript() + instructions + applicationConfig.promptQuestion() + completionRequest.getPrompt() + applicationConfig.promptFinal(),
-                                completionRequest.getMessages()))
-                .choices().toString();
+        String threadId = (String) completionRequest.getThreadId();
 
-        historyService.saveHistory(new HistoryEntry(null, completionRequest.getPrompt(), aiAnswer, clientService.findByUsername(username)));
+        Map<String, Object> message = new HashMap<>();
+        message.put("role", "user");
+        message.put("content", completionRequest.getPrompt());
+        openAIAssistantClient.addMessage(threadId, message);
 
+        Map<String, Object> runParams = new HashMap<>();
+        runParams.put("assistant_id", privateClientService.getPrivateClientByClient(clientService.findByUsername(username)).getAssistantId());
+        openAIAssistantClient.startRun(threadId, runParams);
+
+        Map<String, Object> response = openAIAssistantClient.getMessages(threadId);
+        List<Map<String, Object>> messages = (List<Map<String, Object>>) response.get("data");
+
+        String aiResponse = "";
+        for (Map<String, Object> msg : messages) {
+            if ("assistant".equals(msg.get("role"))) {
+                aiResponse = (String) msg.get("content");
+                break;
+            }
+        }
+
+        historyService.saveHistory(new HistoryEntry(null, completionRequest.getPrompt(), aiResponse, clientService.findByUsername(username)));
         clientService.increasePromptSentByUsername(username);
 
-        return aiAnswer;
+        return Map.of("assistant_response", aiResponse);
     }
+
 
     @GET
     @SneakyThrows
