@@ -24,6 +24,8 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.util.*;
 
+import static java.lang.Thread.sleep;
+
 @Path("/chat")
 public class NvidiaResource {
 
@@ -76,8 +78,8 @@ public class NvidiaResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.TEXT_PLAIN)
     @Bulkhead(value = 20, waitingTaskQueue = 30)
-    @Path("/chat")
-    public Map<String, Object> useAssistantConversation(CompletionRequest completionRequest) {
+    @Path("/send")
+    public String useAssistantConversation(CompletionRequest completionRequest) {
         String username = securityIdentity.getPrincipal().getName();
 
         String threadId = (String) completionRequest.getThreadId();
@@ -89,23 +91,56 @@ public class NvidiaResource {
 
         Map<String, Object> runParams = new HashMap<>();
         runParams.put("assistant_id", privateClientService.getPrivateClientByClient(clientService.findByUsername(username)).getAssistantId());
-        openAIAssistantClient.startRun(threadId, runParams);
-
+        try {
+            Map<String, Object> assistantResponse = openAIAssistantClient.startRun(threadId, runParams);
+            System.out.println("Assistant run started successfully: " + assistantResponse);
+        } catch (WebApplicationException e) {
+            String errorMessage = e.getResponse().readEntity(String.class);
+            System.out.println("Error details: " + errorMessage);  // Print detailed error response
+            throw e;  // Optionally, you can throw or handle differently
+        }
+        sleep(5000);
         Map<String, Object> response = openAIAssistantClient.getMessages(threadId);
-        List<Map<String, Object>> messages = (List<Map<String, Object>>) response.get("data");
+        Object data = response.get("data");
 
-        String aiResponse = "";
-        for (Map<String, Object> msg : messages) {
-            if ("assistant".equals(msg.get("role"))) {
-                aiResponse = (String) msg.get("content");
-                break;
+
+        List<Map<String, Object>> messages = null;
+        if (data instanceof List<?>) {
+            List<?> dataList = (List<?>) data;
+            if (!dataList.isEmpty() && dataList.get(0) instanceof Map) {
+                messages = (List<Map<String, Object>>) dataList;
+            } else {
+                System.out.println("Invalid data structure");
             }
         }
+        if (messages != null) {
+            String aiResponse = "";
+            for (Map<String, Object> msg : messages) {
+                if ("assistant".equals(msg.get("role"))) {
+                    Object content = msg.get("content");
 
-        historyService.saveHistory(new HistoryEntry(null, completionRequest.getPrompt(), aiResponse, clientService.findByUsername(username)));
-        clientService.increasePromptSentByUsername(username);
+                    if (content instanceof String) {
+                        // If it's a string, simply cast it
+                        aiResponse = (String) content;
+                    } else if (content instanceof List<?>) {
+                        // If it's a list, you might want to convert it to a string or handle differently
+                        aiResponse = content.toString();  // Or some custom logic to handle the list
+                    } else {
+                        aiResponse = "Unexpected content type: " + content.getClass().getName();
+                    }
+                    break;
+                }
+            }
+//            TODO: fails when its big data(its possible that we don't need it anymore) historyService.saveHistory(new HistoryEntry(null, completionRequest.getPrompt(), aiResponse, clientService.findByUsername(username)));
+            clientService.increasePromptSentByUsername(username);
+            return aiResponse;
+        } else {
+            throw new WebApplicationException("There are no messages!", 400);
+        }
 
-        return Map.of("assistant_response", aiResponse);
+
+
+
     }
 
 

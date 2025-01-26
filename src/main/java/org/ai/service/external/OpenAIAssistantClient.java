@@ -16,6 +16,7 @@ import java.util.Map;
 @RegisterRestClient(baseUri = "https://api.openai.com/v1")
 @ClientHeaderParam(name = "Authorization", value = "Bearer ${openai.api.key}")
 @ClientHeaderParam(name = "Content-Type", value = "application/json")
+@ClientHeaderParam(name = "OpenAI-Beta", value = "assistants=v2")
 public interface OpenAIAssistantClient {
 
 

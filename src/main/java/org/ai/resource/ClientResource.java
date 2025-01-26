@@ -53,11 +53,10 @@ public class ClientResource {
 
         Map<String, Object> assistantRequest = new HashMap<>();
         assistantRequest.put("name", request.getClient().getName());
-        assistantRequest.put("instructions", request.getClient().getAiInstructions().stream().map(String::valueOf).collect(Collectors.toList()));
+        assistantRequest.put("instructions", String.join(", ", request.getClient().getAiInstructions()));
         assistantRequest.put("model", "gpt-4-turbo");
-
+        System.out.println(assistantRequest);
         Map<String, Object> assistantResponse = openAIAssistantClient.createAssistant(assistantRequest);
-
         return privateClientService.savePrivateClient(request.getClient(), request.getClient().getName(), request.getPassword(), (String) assistantResponse.get("id"));
     }
 
