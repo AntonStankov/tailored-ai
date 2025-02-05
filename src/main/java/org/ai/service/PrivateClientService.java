@@ -17,12 +17,13 @@ public class PrivateClientService {
     private final ClientServiceImpl clientService;
 
     @Transactional
-    public PrivateClient savePrivateClient(Client client, String username, String password) {
+    public PrivateClient savePrivateClient(Client client, String username, String password, String assistantId) {
         clientService.createClient(client);
         PrivateClient privateClient = new PrivateClient();
         privateClient.setClient(client);
         privateClient.setPrivateUsername(username);
         privateClient.setPrivatePassword(BcryptUtil.bcryptHash(password));
+        privateClient.setAssistantId(assistantId);
         privateClientRepo.persist(privateClient);
         privateClientRepo.flush();
         return privateClient;

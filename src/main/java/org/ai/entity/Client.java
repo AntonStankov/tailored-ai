@@ -54,7 +54,6 @@ public class Client {
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "ai-instructions", joinColumns = @JoinColumn(name = "client_id"))
     @Column(nullable = false, length = 1000)
-    @JsonIgnore
     private List<String> aiInstructions;
 
     @OneToMany(mappedBy = "client",
