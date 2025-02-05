@@ -9,6 +9,8 @@ import org.ai.entity.Client;
 import org.ai.entity.PrivateClient;
 import org.ai.service.repository.PrivateClientRepo;
 
+import java.util.ArrayList;
+
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
 public class PrivateClientService {
@@ -24,6 +26,7 @@ public class PrivateClientService {
         privateClient.setPrivateUsername(username);
         privateClient.setPrivatePassword(BcryptUtil.bcryptHash(password));
         privateClient.setAssistantId(assistantId);
+        privateClient.setThreadIds(new ArrayList<>(0));
         privateClientRepo.persist(privateClient);
         privateClientRepo.flush();
         return privateClient;
@@ -40,5 +43,17 @@ public class PrivateClientService {
         Client client = clientService.findByUsername(username);
         PrivateClient privateClient = getPrivateClientByClient(client);
         return username.equals(privateClient.getPrivateUsername()) && BcryptUtil.matches(password, privateClient.getPrivatePassword());
+    }
+    @Transactional
+    public boolean addThread(String threadId, String username) {
+        Client client = clientService.findByUsername(username);
+        PrivateClient privateClient = getPrivateClientByClient(client);
+        if (privateClient.getThreadIds().contains(threadId)) {
+            return false;
+        }
+        privateClient.getThreadIds().add(threadId);
+        privateClientRepo.persist(privateClient);
+        privateClientRepo.flush();
+        return true;
     }
 }

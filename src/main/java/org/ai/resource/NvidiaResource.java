@@ -7,11 +7,10 @@ import jakarta.ws.rs.core.MediaType;
 import lombok.SneakyThrows;
 import org.ai.auth.ClientRoleAllowed;
 import org.ai.config.ApplicationConfig;
-import org.ai.entity.HistoryEntry;
+import org.ai.entity.PrivateClient;
 import org.ai.integration.types.CompletionRequest;
 import org.ai.integration.types.GenericAuthRequest;
 import org.ai.integration.types.HistoryFormat;
-import org.ai.integration.types.Records;
 import org.ai.service.ClientServiceImpl;
 import org.ai.service.HistoryService;
 import org.ai.service.PrivateClientService;
@@ -66,8 +65,11 @@ public class NvidiaResource {
     @Bulkhead(value = 20, waitingTaskQueue = 30)
     @Path("/start")
     public Map<String, Object> startAssistantConversation() {
+        String username = securityIdentity.getPrincipal().getName();
         Map<String, Object> threadResponse = openAIAssistantClient.createThread();
         String threadId = (String) threadResponse.get("id");
+
+        privateClientService.addThread(threadId, username);
 
         return Map.of("thread_id", threadId);
     }
@@ -144,33 +146,67 @@ public class NvidiaResource {
     }
 
 
-    @GET
-    @SneakyThrows
-    @ClientRoleAllowed
-    @Produces(MediaType.APPLICATION_JSON)
-    @Bulkhead(value = 10, waitingTaskQueue = 20)
-    @Path("/getHistory")
-    public List<HistoryFormat> getHistory(GenericAuthRequest<String> request) {
-        String username = securityIdentity.getPrincipal().getName();
-        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword(), username)) {
-            throw new ForbiddenException();
-        }
 
-        String historyString = historyNginxClient.getFileContent(username + applicationConfig.historyFileSuffix());
-        List<HistoryFormat> history = new ArrayList<>();
-
-        Arrays.stream(historyString.split(applicationConfig.historyEnder())).forEach(action -> {
-            HistoryFormat historyFormat = new HistoryFormat();
-            if (!action.isBlank()){
-                List<String> str = Arrays.stream(Arrays.stream(action.split(applicationConfig.historyStarter())).toList().get(1).split(applicationConfig.historySeparator())).toList();
-
-                historyFormat.setPrompt(str.get(0));
-                historyFormat.setAiAnswer(str.get(1).split(applicationConfig.assistantCutStart())[1].split(applicationConfig.assistantCutEnd())[0]);
-
-                history.add(historyFormat);
-            }
-        });
-
-        return history;
-    }
+//    @GET
+//    @SneakyThrows
+//    @ClientRoleAllowed
+//    @Produces(MediaType.APPLICATION_JSON)
+//    @Bulkhead(value = 10, waitingTaskQueue = 20)
+//    @Path("/getHistory")
+//    public List<Thread> getHistory(GenericAuthRequest<String> request) {
+//        String username = securityIdentity.getPrincipal().getName();
+////        if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword(), username)) {
+////            throw new ForbiddenException();
+////        }
+////
+////        String historyString = historyNginxClient.getFileContent(username + applicationConfig.historyFileSuffix());
+////        List<HistoryFormat> history = new ArrayList<>();
+////
+////        Arrays.stream(historyString.split(applicationConfig.historyEnder())).forEach(action -> {
+////            HistoryFormat historyFormat = new HistoryFormat();
+////            if (!action.isBlank()){
+////                List<String> str = Arrays.stream(Arrays.stream(action.split(applicationConfig.historyStarter())).toList().get(1).split(applicationConfig.historySeparator())).toList();
+////
+////                historyFormat.setPrompt(str.get(0));
+////                historyFormat.setAiAnswer(str.get(1).split(applicationConfig.assistantCutStart())[1].split(applicationConfig.assistantCutEnd())[0]);
+////
+////                history.add(historyFormat);
+////            }
+////        });
+////
+////        return history;
+//        PrivateClient privateClient = privateClientService.getPrivateClientByClient(clientService.findByUsername(username));
+//        List<String> threadsIds = privateClient.getThreadIds();
+//
+//
+//
+//
+//        List<Thread> threads = new ArrayList<>();
+//        for (String threadId : threadsIds) {
+//            Map<String, Object> response = openAIAssistantClient.getMessages(threadId);
+//            Object data = response.get("data");
+//            List<Map<String, Object>> messages = null;
+//            if (data instanceof List<?>) {
+//                List<?> dataList = (List<?>) data;
+//                if (!dataList.isEmpty() && dataList.get(0) instanceof Map) {
+//                    messages = (List<Map<String, Object>>) dataList;
+//                } else {
+//                    System.out.println("Invalid data structure");
+//                }
+//            }
+//            if (messages != null) {
+//                List<Message> messagesList = new ArrayList<>();
+//                for (Map<String, Object> msg : messages) {
+//                    Object content = msg.get("content");
+//                    if (content instanceof String) {
+//                        messagesList.add(new Message((String) msg.get("role"), (String) content));
+//                    }
+//                }
+//                threads.add(new Thread(messagesList));
+//            } else {
+//                throw new WebApplicationException("There are no messages!", 400);
+//            }
+//        }
+//        return threads;
+//    }
 }

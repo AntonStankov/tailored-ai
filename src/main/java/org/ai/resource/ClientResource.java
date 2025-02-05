@@ -22,6 +22,7 @@ import org.ai.service.external.OpenAIAssistantClient;
 import org.eclipse.microprofile.faulttolerance.Bulkhead;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,11 @@ public class ClientResource {
     @Inject
     @RestClient
     private OpenAIAssistantClient openAIAssistantClient;
+
+    public record Message(String role, String content) {
+    }
+    public record Thread(List<Message> messages) {
+    }
 
     @Path("/add")
     @POST
@@ -151,11 +157,46 @@ public class ClientResource {
     @ClientRoleAllowed
     @Produces(MediaType.APPLICATION_JSON)
     @Bulkhead(value = 10, waitingTaskQueue = 20)
-    public List<HistoryEntry> getHistory(GenericAuthRequest<String> request) {
+    public List<Thread> getHistory(GenericAuthRequest<String> request) {
         String username = securityIdentity.getPrincipal().getName();
         if (!privateClientService.checkPrivateClientAuthority(request.getUsername(), request.getPassword(), username)) {
             throw new ForbiddenException();
         }
-        return historyService.getHistoryByClient(clientService.findByUsername(username));
+//        return historyService.getHistoryByClient(clientService.findByUsername(username));
+        PrivateClient privateClient = privateClientService.getPrivateClientByClient(clientService.findByUsername(username));
+        List<String> threadsIds = privateClient.getThreadIds();
+
+
+        List<Thread> threads = new ArrayList<>();
+        for (String threadId : threadsIds) {
+            Map<String, Object> response = openAIAssistantClient.getMessages(threadId);
+            Object data = response.get("data");
+            List<Map<String, Object>> messages = null;
+            if (data instanceof List<?>) {
+                List<?> dataList = (List<?>) data;
+                if (!dataList.isEmpty() && dataList.get(0) instanceof Map) {
+                    messages = (List<Map<String, Object>>) dataList;
+                } else {
+                    System.out.println("Invalid data structure");
+                }
+            }
+            if (messages != null) {
+                List<Message> messagesList = new ArrayList<>();
+                for (Map<String, Object> msg : messages) {
+                    Object content = msg.get("content");
+                    if (content instanceof String) {
+                        messagesList.add(new Message((String) msg.get("role"), (String) content));
+                    } else if (content instanceof List<?>) {
+                        messagesList.add(new Message((String) msg.get("role"), content.toString()));
+                    } else {
+                        messagesList.add(new Message((String) msg.get("role"), "Unexpected content type: " + content.getClass().getName()));
+                    }
+                }
+                threads.add(new Thread(messagesList));
+            } else {
+                throw new WebApplicationException("There are no messages!", 400);
+            }
+        }
+        return threads;
     }
 }
